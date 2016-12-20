@@ -82,7 +82,6 @@ def opencv_find_face(img):
     color_face96 = cv2.resize(color_face, (96, 96), interpolation=cv2.INTER_CUBIC)
     return roi_gray96, color_face96
 
-
 def get_nose_point(nose_rect):
     x = nose_rect[0]
     y = nose_rect[1]
@@ -116,13 +115,48 @@ def draw_points(points, img):
         cv2.circle(img, (point[0], point[1]), 1, (255, 255, 0))
 
 
-def predict(align_face):
+def predict_align_face(align_face):
     rep = net.forward(align_face)
     predictions = clf.predict_proba(rep).ravel()
     # print predictions
     maxI = np.argmax(predictions)
     # max2 = np.argsort(predictions)[-3:][::-1][1]
     return le.inverse_transform(maxI)
+
+
+def predict_face(gray_face):
+    cv_senses = opencv_search_senses(gray_face)
+
+    cv_face_cp = copy.copy(opencv_face)
+    draw_rect(cv_senses, opencv_face)
+
+    nose_point = get_nose_point(cv_senses['nose'])
+    cv_eye_points = get_eye_points(cv_senses['eye'])
+    cv_eye_points.append(nose_point)
+    # affine transformation
+    h, w, ch = cv_face_cp.shape
+    # points
+    pts1 = np.float32(cv_eye_points)
+    pts2 = np.float32(dlib_points)
+    M = cv2.getAffineTransform(pts1, pts2)
+    cv_dlib = cv2.warpAffine(cv_face_cp, M, (w, h))
+
+    name = predict_align_face(cv_dlib)
+    return name, cv_eye_points
+
+def opencv_find_faces(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.1, 3)
+    person_info = {}
+    for face in faces:
+        # get face image
+        x, y, w, h = face
+        roi_gray = gray[y:y + h, x:x + w]
+        roi_gray96 = cv2.resize(roi_gray, (96, 96), interpolation=cv2.INTER_CUBIC)
+        # get name
+        name, points = predict_face(roi_gray96)
+        person_info[name] = {'points': points, 'face_rect': face}
+    return person_info
 
 if __name__ == '__main__':
     random.seed(time.time())
