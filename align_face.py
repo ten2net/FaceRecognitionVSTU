@@ -11,11 +11,12 @@ import openface
 import random
 
 dlib_face_predictor_path = "/home/timpfey/Work/openface/models/dlib/shape_predictor_68_face_landmarks.dat"
-# Sherbakov_test2.png
-img_path = '/home/timpfey/Work/openface/test-images/Kataev_test1.png'
+net_path_128 = "/home/timpfey/Work/openface/models/openface/nn4.small2.v1.t7"
+svm_path = "/home/timpfey/Work/openface/generated-embeddings/classifier.pkl"
+im_path = "/home/timpfey/Work/openface/test-images/Screenshot_20161213_014837.png"
 opencv_cascade_path = '/home/timpfey/Work/opencv/data/haarcascades/'
+img_path = '/home/timpfey/Work/openface/test-images/Kataev_test1.png'
 
-align = openface.AlignDlib(dlib_face_predictor_path)
 face_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'face.xml')
 eye_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'Eye.xml')
 nose_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'nose.xml')
@@ -23,6 +24,14 @@ mouth_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'mouth.xml')
 right_eye_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'right_eye.xml')
 left_eye_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'left_eye.xml')
 
+align = openface.AlignDlib(dlib_face_predictor_path)
+# read torch net 128
+net = openface.TorchNeuralNet(net_path_128, imgDim=96, cuda=False)
+# svm classifier
+with open(svm_path, 'r') as f:
+    (le, clf) = pickle.load(f)  # le - label and clf - classifer
+
+dlib_points = [[33,15], [67,15], [48,39]]
 
 def dlib_align(img):
     # get reps
@@ -107,24 +116,30 @@ def draw_points(points, img):
         cv2.circle(img, (point[0], point[1]), 1, (255, 255, 0))
 
 
+def predict(align_face):
+    rep = net.forward(align_face)
+    predictions = clf.predict_proba(rep).ravel()
+    # print predictions
+    maxI = np.argmax(predictions)
+    # max2 = np.argsort(predictions)[-3:][::-1][1]
+    return le.inverse_transform(maxI)
+
 if __name__ == '__main__':
-
     random.seed(time.time())
-
     img = cv2.imread(img_path)
-    aligned_faces = dlib_align(img)
-
-    gray = cv2.cvtColor(aligned_faces[0], cv2.COLOR_BGR2GRAY)
-    senses = opencv_search_senses(gray)
-
-    draw_rect(senses, aligned_faces[0])
-
-    dlib_nose_point = get_nose_point(senses['nose'])
-    dlib_eye_point = get_eye_points(senses['eye'])
-    dlib_eye_point.append(dlib_nose_point)
-
-    draw_points(dlib_eye_point, aligned_faces[0])
-    cv2.imshow("dlib", aligned_faces[0])
+    # aligned_faces = dlib_align(img)
+    #
+    # gray = cv2.cvtColor(aligned_faces[0], cv2.COLOR_BGR2GRAY)
+    # senses = opencv_search_senses(gray)
+    #
+    # draw_rect(senses, aligned_faces[0])
+    #
+    # dlib_nose_point = get_nose_point(senses['nose'])
+    # dlib_eye_point = get_eye_points(senses['eye'])
+    # dlib_eye_point.append(dlib_nose_point)
+    #
+    # draw_points(dlib_eye_point, aligned_faces[0])
+    # cv2.imshow("dlib", aligned_faces[0])
 
     gray_face, opencv_face = opencv_find_face(img)
     cv_senses = opencv_search_senses(gray_face)
@@ -143,12 +158,16 @@ if __name__ == '__main__':
     h, w, ch = cv_face_cp.shape
     # points
     pts1 = np.float32(cv_eye_points)
-    pts2 = np.float32(dlib_eye_point)
+    pts2 = np.float32(dlib_points)
 
     M = cv2.getAffineTransform(pts1, pts2)
 
     cv_dlib = cv2.warpAffine(cv_face_cp, M, (w, h))
     cv2.imshow('affine', cv_dlib)
+
+    name = predict(cv_dlib)
+
+    print (name)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
