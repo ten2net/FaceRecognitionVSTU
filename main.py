@@ -9,7 +9,7 @@ class MainApp(QtGui.QWidget):
     def __init__(self):
         super(MainApp, self).__init__()
         self.log = QtGui.QTextEdit()
-        self.capture = cv2.VideoCapture(0)
+        self.capture = cv2.VideoCapture(1)
         self.predict_list = QtGui.QListWidget()
 
         self.image = QtGui.QLabel()
@@ -76,6 +76,7 @@ class MainApp(QtGui.QWidget):
     def stream(self):
         ret, frame = self.capture.read()
         if ret:
+            
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame = cv2.flip(frame, 1)
             image = QtGui.QImage(frame,
