@@ -11,12 +11,13 @@ import openface
 import random
 
 dlib_face_predictor_path = "/home/timpfey/Work/openface/models/dlib/shape_predictor_68_face_landmarks.dat"
-img_path = '/home/timpfey/Work/openface/test-images/Sherbakov_test2.png'
+# Sherbakov_test2.png
+img_path = '/home/timpfey/Work/openface/test-images/Kataev_test1.png'
 opencv_cascade_path = '/home/timpfey/Work/opencv/data/haarcascades/'
 
 align = openface.AlignDlib(dlib_face_predictor_path)
 face_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'haarcascade_frontalface_default.xml')
-eye_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'Eye.xml')
+eye_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'haarcascade_eye.xml')
 nose_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'Nariz.xml')
 mouth_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'Mouth.xml')
 
@@ -43,11 +44,11 @@ def dlib_align(img):
     return aligned_faces
 
 
-def opencv_search_senses(gray_img):
+def opencv_search_senses(gray_img, scale_factor=1.1, min_neighbors=3):
 
-    eye = eye_cascade.detectMultiScale(gray_img)
-    nose = nose_cascade.detectMultiScale(gray_img)
-    mouth = mouth_cascade.detectMultiScale(gray_img)
+    eye = eye_cascade.detectMultiScale(gray_img, scale_factor, min_neighbors)
+    #nose = nose_cascade.detectMultiScale(gray_img, scale_factor, min_neighbors)
+    mouth = mouth_cascade.detectMultiScale(gray_img, scale_factor, min_neighbors)
 
     return {'eye': eye, 'nose': nose, 'mouth': mouth}
 
@@ -59,8 +60,8 @@ def opencv_find_face(img):
     for (x, y, w, h) in faces:
         detect = {'face':[x, y, w, h]}
         roi_gray = gray[y:y + h, x:x + w]
-        sences = opencv_search_senses(roi_gray)
-    detect.update(senses)
+        sen = opencv_search_senses(roi_gray, 1.1, 2)
+    detect.update(sen)
 
     return detect
 
@@ -94,10 +95,11 @@ if __name__ == '__main__':
     origin_copy = copy.copy(img)
     face_origin = origin_copy[fy:fy + fh, fx:fx + fw]
     for name, rect in detect.iteritems():
-        for (x, y, w, h) in rect:
-            color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-            cv2.rectangle(face_origin, (x, y), (x + w, y + h), color, 2)
-            cv2.putText(face_origin, '{}'.format(name), (x + w / 2, y + h), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+        if name != 'face':
+            for (x, y, w, h) in rect:
+                color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+                cv2.rectangle(face_origin, (x, y), (x + w, y + h), color, 2)
+                cv2.putText(face_origin, '{}'.format(name), (x + w / 2, y + h), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
 
     cv2.imshow('opencv face', face_origin)
 
