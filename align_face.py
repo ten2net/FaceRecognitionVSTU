@@ -50,7 +50,7 @@ def opencv_search_senses(gray_img, scale_factor=1.1, min_neighbors=3):
     eye = eye_cascade.detectMultiScale(gray_img)
     nose = nose_cascade.detectMultiScale(gray_img, scale_factor, min_neighbors)
     if len(nose) > 0 and len(eye) > 0:
-        return {'eye': eye[0], 'nose': [nose[0]], 'mouth': []}
+        return {'eye': eye[0], 'nose': nose[0], 'mouth': []}
     else:
         return None
 
@@ -63,7 +63,9 @@ def opencv_search_eyes(gray_img, scale_factor=1.1, min_neighbors=3):
 
 def opencv_find_face(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    start_time = time.time()
     faces = face_cascade.detectMultiScale(gray, 1.1, 3)
+    print 'cascade face {}'.format(time.time() - start_time)
     x, y, w, h = faces[0]
     roi_gray = gray[y:y + h, x:x + w]
     color_face = img[y:y + h, x:x + w]
@@ -88,21 +90,21 @@ def get_eye_points(eye_rect):
     rx = lx + w
     ry = ly + h
 
-    return [[lx + w/2, ly + h/2], [rx + w/2, ry + h/2]]
+    return [[lx + w/2, ly + h], [rx + w/2, ry]]
 
 
 def draw_rect(rect_dist, img):
     for name, rect in rect_dist.iteritems():
-        for (x, y, w, h) in rect:
+        if len(rect) > 0:
+            x, y, w, h = rect
             color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
             cv2.rectangle(img, (x, y), (x+w, y+h), color, 2)
             cv2.putText(img, '{}'.format(name), (x+w/2, y+h), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
 
+
 def draw_points(points, img):
     for point in points:
         cv2.circle(img, (point[0], point[1]), 1, (255, 255, 0))
-        cv2.circle(img, (point[0][0], point[0][1]), 1, (0, 255, 255))
-        cv2.circle(img, (point[1][0], point[1][1]), 1, (0, 255, 255))
 
 
 if __name__ == '__main__':
@@ -115,16 +117,38 @@ if __name__ == '__main__':
     gray = cv2.cvtColor(aligned_faces[0], cv2.COLOR_BGR2GRAY)
     senses = opencv_search_senses(gray)
 
-    dlib_nose_point = get_nose_point(senses['nose'][0])
-    dlib_eye_point = get_eye_points(senses['eye'])
+    draw_rect(senses, aligned_faces[0])
 
+    dlib_nose_point = get_nose_point(senses['nose'])
+    dlib_eye_point = get_eye_points(senses['eye'])
+    dlib_eye_point.append(dlib_nose_point)
+
+    draw_points(dlib_eye_point, aligned_faces[0])
+    cv2.imshow("dlib", aligned_faces[0])
 
     gray_face, opencv_face = opencv_find_face(img)
-    cv_face = copy.copy(opencv_face)
     cv_senses = opencv_search_senses(gray_face)
 
-    nose_point = get_nose_point(cv_senses['nose'][0])
-    eye_points = get_eye_points(cv_senses['eye'])
+    cv_face_cp = copy.copy(opencv_face)
+    draw_rect(cv_senses, opencv_face)
+
+    nose_point = get_nose_point(cv_senses['nose'])
+    cv_eye_points = get_eye_points(cv_senses['eye'])
+    cv_eye_points.append(nose_point)
+
+    draw_points(cv_eye_points, opencv_face)
+    cv2.imshow('opencv', opencv_face)
+
+    # affine transformation
+    h, w, ch = cv_face_cp.shape
+    # points
+    pts1 = np.float32(cv_eye_points)
+    pts2 = np.float32(dlib_eye_point)
+
+    M = cv2.getAffineTransform(pts1, pts2)
+
+    cv_dlib = cv2.warpAffine(cv_face_cp, M, (w, h))
+    cv2.imshow('affine', cv_dlib)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
