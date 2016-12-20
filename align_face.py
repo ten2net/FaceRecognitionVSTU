@@ -16,10 +16,12 @@ img_path = '/home/timpfey/Work/openface/test-images/Kataev_test1.png'
 opencv_cascade_path = '/home/timpfey/Work/opencv/data/haarcascades/'
 
 align = openface.AlignDlib(dlib_face_predictor_path)
-face_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'haarcascade_frontalface_default.xml')
-eye_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'haarcascade_eye.xml')
-nose_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'Nariz.xml')
-mouth_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'Mouth.xml')
+face_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'face.xml')
+eye_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'Eye.xml')
+nose_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'nose.xml')
+mouth_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'mouth.xml')
+right_eye_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'right_eye.xml')
+left_eye_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'left_eye.xml')
 
 
 def dlib_align(img):
@@ -45,25 +47,42 @@ def dlib_align(img):
 
 
 def opencv_search_senses(gray_img, scale_factor=1.1, min_neighbors=3):
-
-    eye = eye_cascade.detectMultiScale(gray_img, scale_factor, min_neighbors)
-    #nose = nose_cascade.detectMultiScale(gray_img, scale_factor, min_neighbors)
+    eye = eye_cascade.detectMultiScale(gray_img)
+    nose = nose_cascade.detectMultiScale(gray_img, scale_factor, min_neighbors)
     mouth = mouth_cascade.detectMultiScale(gray_img, scale_factor, min_neighbors)
+    return {'eye': eye, 'nose': [nose[0]], 'mouth': []}
 
-    return {'eye': eye, 'nose': nose, 'mouth': mouth}
+def opencv_search_eyes(gray_img, scale_factor=1.1, min_neighbors=3):
+    rigth_eye = right_eye_cascade.detectMultiScale(gray_img, scale_factor, min_neighbors)
+    left_eye = left_eye_cascade.detectMultiScale(gray_img, scale_factor, min_neighbors)
+    return {'r_eye': rigth_eye, 'l_eye': left_eye}
 
 def opencv_find_face(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.1, 3)
+    x, y, w, h = faces[0]
+    roi_gray = gray[y:y + h, x:x + w]
+    color_face = img[y:y + h, x:x + w]
+    roi_gray96 = cv2.resize(roi_gray, (96, 96), interpolation=cv2.INTER_CUBIC)
+    color_face96 = cv2.resize(color_face, (96, 96), interpolation=cv2.INTER_CUBIC)
+    return roi_gray96, color_face96
 
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-    detect = {}
-    for (x, y, w, h) in faces:
-        detect = {'face':[x, y, w, h]}
-        roi_gray = gray[y:y + h, x:x + w]
-        sen = opencv_search_senses(roi_gray, 1.1, 2)
-    detect.update(sen)
+def get_nose_point(nose_rect):
+    x = nose_rect[0]
+    y = nose_rect[1]
+    w = nose_rect[2]
+    h = nose_rect[3]
+    return [x+w/2, y+h/2]
 
-    return detect
+def get_eye_points(eye_rect):
+    lx = eye_rect[0]
+    ly = eye_rect[1]
+    w = eye_rect[2]/2
+    h = eye_rect[3]/2
+    rx = lx + w
+    ry = ly + h
+
+    return [[lx + w/2, ly + h/2], [rx + w/2, ry + h/2]]
 
 if __name__ == '__main__':
     random.seed(time.time())
@@ -73,10 +92,10 @@ if __name__ == '__main__':
     aligned_faces = dlib_align(img)
 
     i = 0
-    for face in aligned_faces:
-        cv2.imshow("align face{}".format(i), face)
-        cv2.imwrite("/home/timpfey/Work/openface/test-images/test-align/dlib_align_test{}.png".format(i), face)
-        i += 1
+    # for face in aligned_faces:
+    #     cv2.imshow("align face{}".format(i), face)
+    #     cv2.imwrite("/home/timpfey/Work/openface/test-images/test-align/dlib_align_test{}.png".format(i), face)
+    #     i += 1
 
     gray = cv2.cvtColor(aligned_faces[0], cv2.COLOR_BGR2GRAY)
     senses = opencv_search_senses(gray)
@@ -89,19 +108,39 @@ if __name__ == '__main__':
             cv2.putText(img_copy, '{}'.format(name), (x+w/2, y+h), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
     cv2.imshow('opencv align senses', img_copy)
 
-    cv2.imshow('origin', img)
-    detect = opencv_find_face(img)
-    fx, fy, fw, fh = detect['face']
-    origin_copy = copy.copy(img)
-    face_origin = origin_copy[fy:fy + fh, fx:fx + fw]
-    for name, rect in detect.iteritems():
-        if name != 'face':
-            for (x, y, w, h) in rect:
-                color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-                cv2.rectangle(face_origin, (x, y), (x + w, y + h), color, 2)
-                cv2.putText(face_origin, '{}'.format(name), (x + w / 2, y + h), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+    # cv_eyes = opencv_search_eyes(gray, 1.1, 10)
+    # dlib_copy = copy.copy(aligned_faces[0])
+    # for name, rect in cv_eyes.iteritems():
+    #     for (x, y, w, h) in rect:
+    #         color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+    #         cv2.rectangle(dlib_copy, (x, y), (x+w, y+h), color, 2)
+    #         cv2.putText(dlib_copy, '{}'.format(name), (x+w/2, y+h), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+    # cv2.imshow('opencv align eye', dlib_copy)
 
-    cv2.imshow('opencv face', face_origin)
+    gray_face, opencv_face = opencv_find_face(img)
+    cv_face = copy.copy(opencv_face)
+    cv_senses = opencv_search_senses(gray_face)
+    # for name, rect in cv_senses.iteritems():
+    #     for (x, y, w, h) in rect:
+    #         color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+    #         cv2.rectangle(opencv_face, (x, y), (x+w, y+h), color, 2)
+    #         cv2.putText(opencv_face, '{}'.format(name), (x+w/2, y+h), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+    nose_point = get_nose_point(cv_senses['nose'][0])
+    cv2.circle(opencv_face, (nose_point[0], nose_point[1]), 1, (255, 255, 0))
+    eye_points = get_eye_points(cv_senses['eye'][0])
+    cv2.circle(opencv_face, (eye_points[0][0], eye_points[0][1]), 1, (0, 255, 255))
+    cv2.circle(opencv_face, (eye_points[1][0], eye_points[1][1]), 1, (0, 255, 255))
+    cv2.imshow('opencv face senses', opencv_face)
+
+
+
+    # cv_eyes = opencv_search_eyes(gray_face, 2, 10)
+    # for name, rect in cv_eyes.iteritems():
+    #     for (x, y, w, h) in rect:
+    #         color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+    #         cv2.rectangle(cv_face, (x, y), (x+w, y+h), color, 2)
+    #         cv2.putText(cv_face, '{}'.format(name), (x+w/2, y+h), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+    # cv2.imshow('opencv face eye', cv_face)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
