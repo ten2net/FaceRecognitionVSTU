@@ -162,57 +162,9 @@ def opencv_find_faces(img):
         person_info.append({'name': name, 'points': points, 'face_rect': face})
     return person_info
 
-if __name__ == '__main__':
-    random.seed(time.time())
-    img = cv2.imread(img_path)
+def dredict_and_draw(img):
     info = opencv_find_faces(img)
     draw_rect_in_list([info[0]['face_rect']], img)
     cv2.putText(img, info[0]['name'],
                 (info[0]['face_rect'][0], info[0]['face_rect'][1] + info[0]['face_rect'][3]),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-    cv2.imshow('d', img)
-    print info
-    # aligned_faces = dlib_align(img)
-    #
-    # gray = cv2.cvtColor(aligned_faces[0], cv2.COLOR_BGR2GRAY)
-    # senses = opencv_search_senses(gray)
-    #
-    # draw_rect(senses, aligned_faces[0])
-    #
-    # dlib_nose_point = get_nose_point(senses['nose'])
-    # dlib_eye_point = get_eye_points(senses['eye'])
-    # dlib_eye_point.append(dlib_nose_point)
-    #
-    # draw_points(dlib_eye_point, aligned_faces[0])
-    # cv2.imshow("dlib", aligned_faces[0])
-
-    # gray_face, opencv_face = opencv_find_face(img)
-    # cv_senses = opencv_search_senses(gray_face)
-    #
-    # cv_face_cp = copy.copy(opencv_face)
-    # draw_rect(cv_senses, opencv_face)
-    #
-    # nose_point = get_nose_point(cv_senses['nose'])
-    # cv_eye_points = get_eye_points(cv_senses['eye'])
-    # cv_eye_points.append(nose_point)
-    #
-    # draw_points(cv_eye_points, opencv_face)
-    # cv2.imshow('opencv', opencv_face)
-    #
-    # # affine transformation
-    # h, w, ch = cv_face_cp.shape
-    # # points
-    # pts1 = np.float32(cv_eye_points)
-    # pts2 = np.float32(dlib_points)
-    #
-    # M = cv2.getAffineTransform(pts1, pts2)
-    #
-    # cv_dlib = cv2.warpAffine(cv_face_cp, M, (w, h))
-    # cv2.imshow('affine', cv_dlib)
-    #
-    # name = predict(cv_dlib)
-    #
-    # print (name)
-    #
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
