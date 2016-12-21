@@ -2,6 +2,7 @@
 import cv2
 import sys
 from PyQt4 import QtGui, QtCore
+from align_face import predict_and_draw
 
 
 class MainApp(QtGui.QWidget):
@@ -75,9 +76,9 @@ class MainApp(QtGui.QWidget):
     def stream(self):
         ret, frame = self.capture.read()
         if ret:
-            
+            predict_and_draw(frame)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = cv2.flip(frame, 1)
+            #frame = cv2.flip(frame, 1)
             image = QtGui.QImage(frame,
                                  frame.shape[1],
                                  frame.shape[0],

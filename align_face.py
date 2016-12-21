@@ -150,7 +150,7 @@ def predict_face(face):
 
 def opencv_find_faces(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.1, 3)
+    faces = face_cascade.detectMultiScale(gray, 1.4, 10)
     person_info = []
     for face in faces:
         # get face image
@@ -162,9 +162,9 @@ def opencv_find_faces(img):
         person_info.append({'name': name, 'points': points, 'face_rect': face})
     return person_info
 
-def dredict_and_draw(img):
+def predict_and_draw(img):
     info = opencv_find_faces(img)
     draw_rect_in_list([info[0]['face_rect']], img)
     cv2.putText(img, info[0]['name'],
                 (info[0]['face_rect'][0], info[0]['face_rect'][1] + info[0]['face_rect'][3]),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
