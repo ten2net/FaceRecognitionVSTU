@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import cv2
 import sys
 from PyQt4 import QtGui, QtCore
