@@ -10,28 +10,24 @@ from sklearn.mixture import GMM
 import openface
 import random
 
-dlib_face_predictor_path = "/home/timpfey/Work/openface/models/dlib/shape_predictor_68_face_landmarks.dat"
-net_path_128 = "/home/timpfey/Work/openface/models/openface/nn4.small2.v1.t7"
-svm_path = "/home/timpfey/Work/openface/generated-embeddings/classifier.pkl"
-im_path = "/home/timpfey/Work/openface/test-images/Screenshot_20161213_014837.png"
-opencv_cascade_path = '/home/timpfey/Work/opencv/data/haarcascades/'
-img_path = '/home/timpfey/Work/openface/test-images/Kataev_test1.png'
+models_path = './models/'
+dlib_name_model = "shape_predictor_68_face_landmarks.dat"
+net_model = "nn4.small2.v1.t7"
+svm_model = "classifier.pkl"
 
-face_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'face.xml')
-eye_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'Eye.xml')
-nose_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'nose.xml')
-mouth_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'mouth.xml')
-right_eye_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'right_eye.xml')
-left_eye_cascade = cv2.CascadeClassifier(opencv_cascade_path + 'left_eye.xml')
+face_cascade = cv2.CascadeClassifier(models_path + 'face.xml')
+eye_cascade = cv2.CascadeClassifier(models_path + 'eye.xml')
+nose_cascade = cv2.CascadeClassifier(models_path + 'nose.xml')
 
-align = openface.AlignDlib(dlib_face_predictor_path)
+align = openface.AlignDlib(models_path + dlib_name_model)
 # read torch net 128
-net = openface.TorchNeuralNet(net_path_128, imgDim=96, cuda=False)
+net = openface.TorchNeuralNet(models_path + net_model, imgDim=96, cuda=False)
 # svm classifier
-with open(svm_path, 'r') as f:
+with open(models_path + svm_model, 'r') as f:
     (le, clf) = pickle.load(f)  # le - label and clf - classifer
 
 dlib_points = [[33,15], [67,15], [48,39]]
+
 
 def dlib_align(img):
     # get reps
@@ -64,12 +60,6 @@ def opencv_search_senses(gray_img, scale_factor=1.1, min_neighbors=3):
         return None
 
 
-def opencv_search_eyes(gray_img, scale_factor=1.1, min_neighbors=3):
-    rigth_eye = right_eye_cascade.detectMultiScale(gray_img, scale_factor, min_neighbors)
-    left_eye = left_eye_cascade.detectMultiScale(gray_img, scale_factor, min_neighbors)
-    return {'r_eye': rigth_eye, 'l_eye': left_eye}
-
-
 def opencv_find_face(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     start_time = time.time()
@@ -81,6 +71,7 @@ def opencv_find_face(img):
     roi_gray96 = cv2.resize(roi_gray, (96, 96), interpolation=cv2.INTER_CUBIC)
     color_face96 = cv2.resize(color_face, (96, 96), interpolation=cv2.INTER_CUBIC)
     return roi_gray96, color_face96
+
 
 def get_nose_point(nose_rect):
     x = nose_rect[0]
@@ -108,6 +99,7 @@ def draw_rect(rect_dist, img):
             color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
             cv2.rectangle(img, (x, y), (x+w, y+h), color, 2)
             cv2.putText(img, '{}'.format(name), (x+w/2, y+h), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+
 
 def draw_rect_in_list(rects, img):
     for rect in rects:
@@ -148,6 +140,7 @@ def predict_face(face):
     name = predict_align_face(cv_dlib)
     return name, cv_eye_points
 
+
 def opencv_find_faces(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.4, 10)
@@ -161,6 +154,7 @@ def opencv_find_faces(img):
         name, points = predict_face(roi96)
         person_info.append({'name': name, 'points': points, 'face_rect': face})
     return person_info
+
 
 def predict_and_draw(img):
     info = opencv_find_faces(img)
