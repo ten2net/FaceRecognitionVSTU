@@ -86,7 +86,7 @@ class MainApp(QtGui.QWidget):
                 res = predict_and_draw(frame)
                 if res:
                     name, predict = max(res.iteritems(), key=lambda x: x[1])
-                    if predict < .6:
+                    if predict > .5:
                         self.isPredict = True
                     self.update_predictlist(res)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -101,7 +101,7 @@ class MainApp(QtGui.QWidget):
         self.predict_list.clear()
         ordered_dict = sorted(predict_dict.items(), key=lambda t: t[1], reverse=True)
         for key, value in ordered_dict:
-            if value < .2:
+            if value < .3:
                 continue
             itemN = QtGui.QListWidgetItem()
             widget = QtGui.QWidget()
