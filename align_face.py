@@ -126,24 +126,27 @@ def predict_face(face):
     gray_face = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
 
     cv_senses = opencv_search_senses(gray_face)
-    nose_point = get_nose_point(cv_senses['nose'])
-    cv_eye_points = get_eye_points(cv_senses['eye'])
-    cv_eye_points.append(nose_point)
-    # affine transformation
-    h, w, ch = face.shape
-    # points
-    pts1 = np.float32(cv_eye_points)
-    pts2 = np.float32(dlib_points)
-    M = cv2.getAffineTransform(pts1, pts2)
-    cv_dlib = cv2.warpAffine(face, M, (w, h))
+    if cv_senses is not None:
+        nose_point = get_nose_point(cv_senses['nose'])
+        cv_eye_points = get_eye_points(cv_senses['eye'])
+        cv_eye_points.append(nose_point)
+        # affine transformation
+        h, w, ch = face.shape
+        # points
+        pts1 = np.float32(cv_eye_points)
+        pts2 = np.float32(dlib_points)
+        M = cv2.getAffineTransform(pts1, pts2)
+        cv_dlib = cv2.warpAffine(face, M, (w, h))
 
-    name = predict_align_face(cv_dlib)
-    return name, cv_eye_points
+        name = predict_align_face(cv_dlib)
+        return name, cv_eye_points
+    else:
+        None, None
 
 
 def opencv_find_faces(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.4, 10)
+    faces = face_cascade.detectMultiScale(gray, 1.6, 10)
     person_info = []
     for face in faces:
         # get face image
@@ -158,7 +161,10 @@ def opencv_find_faces(img):
 
 def predict_and_draw(img):
     info = opencv_find_faces(img)
-    draw_rect_in_list([info[0]['face_rect']], img)
-    cv2.putText(img, info[0]['name'],
-                (info[0]['face_rect'][0], info[0]['face_rect'][1] + info[0]['face_rect'][3]),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+    if len(info) != 0:
+        draw_rect_in_list([info[0]['face_rect']], img)
+        if info[0]['name'] is not None:
+            cv2.putText(img, info[0]['name'],
+                        (info[0]['face_rect'][0], info[0]['face_rect'][1] + info[0]['face_rect'][3]),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+
