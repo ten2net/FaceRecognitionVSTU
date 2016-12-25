@@ -116,10 +116,14 @@ def draw_points(points, img):
 def predict_align_face(align_face):
     rep = net.forward(align_face)
     predictions = clf.predict_proba(rep).ravel()
+    l = len(predictions)
     # print predictions
     maxI = np.argmax(predictions)
     # max2 = np.argsort(predictions)[-3:][::-1][1]
-    return le.inverse_transform(maxI)
+    people_dict = {}
+    for i in range(l):
+        people_dict[le.inverse_transform(i)] = predictions[i]
+    return le.inverse_transform(maxI), people_dict
 
 
 def predict_face(face):
@@ -138,8 +142,8 @@ def predict_face(face):
         M = cv2.getAffineTransform(pts1, pts2)
         cv_dlib = cv2.warpAffine(face, M, (w, h))
 
-        name = predict_align_face(cv_dlib)
-        return name, cv_eye_points
+        name, people_dict = predict_align_face(cv_dlib)
+        return name, cv_eye_points, people_dict
     else:
         None, None
 
@@ -154,17 +158,19 @@ def opencv_find_faces(img):
         roi = img[y:y + h, x:x + w]
         roi96 = cv2.resize(roi, (96, 96), interpolation=cv2.INTER_CUBIC)
         # get name
-        name, points = predict_face(roi96)
-        person_info.append({'name': name, 'points': points, 'face_rect': face})
+        name, points, people_dict = predict_face(roi96)
+        person_info.append({'name': name, 'points': points, 'face_rect': face, 'dict': people_dict})
     return person_info
 
 
 def predict_and_draw(img):
     info = opencv_find_faces(img)
+    people_dict = None
     if len(info) != 0:
         draw_rect_in_list([info[0]['face_rect']], img)
         if info[0]['name'] is not None:
             cv2.putText(img, info[0]['name'],
                         (info[0]['face_rect'][0], info[0]['face_rect'][1] + info[0]['face_rect'][3]),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
-
+            people_dict = info[0]['dict']
+    return people_dict
