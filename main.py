@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
+
 import cv2
 import sys
-
-import operator
 from PyQt4 import QtGui, QtCore
 from align_face import predict_and_draw
 
@@ -33,27 +32,11 @@ class MainApp(QtGui.QWidget):
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
                   (resolution.height() / 2) - (self.frameSize().height() / 2))
         self.setMinimumSize(1000, 480)
-        # self.setMaximumSize(resolution.width(), resolution.height())
 
         # camera layout
         camera_layout = QtGui.QVBoxLayout()
         camera_layout.addWidget(QtGui.QLabel(u'Camera: 0 fps'))
         camera_layout.addWidget(self.image)
-
-        # predict list test
-        # itemN = QtGui.QListWidgetItem()
-        # widget = QtGui.QWidget()
-        # widgetText = QtGui.QLabel(u'Басов Александр')
-        # widgetButton = QtGui.QPushButton(u'Это я!')
-        # widgetLayout = QtGui.QHBoxLayout()
-        # widgetLayout.addWidget(widgetText)
-        # widgetLayout.addStretch(1)
-        # widgetLayout.addWidget(widgetButton)
-        # widgetLayout.setSizeConstraint(QtGui.QLayout.SetMinimumSize)
-        # widget.setLayout(widgetLayout)
-        # itemN.setSizeHint(widget.sizeHint())
-        # self.predict_list.addItem(itemN)
-        # self.predict_list.setItemWidget(itemN, widget)
 
         # list and log layout
         ll_layout = QtGui.QVBoxLayout()
@@ -69,7 +52,7 @@ class MainApp(QtGui.QWidget):
 
         # show
         self.setLayout(main_layout)
-        self.setWindowTitle('Face Recognition')
+        self.setWindowTitle(u'Face Recognition')
         self.show()
 
     def setup(self):
@@ -99,23 +82,26 @@ class MainApp(QtGui.QWidget):
 
     def update_predictlist(self, predict_dict):
         self.predict_list.clear()
-        ordered_dict = sorted(predict_dict.items(), key=lambda t: t[1], reverse=True)
-        for key, value in ordered_dict:
+        ordered = sorted(predict_dict.items(), key=lambda t: t[1], reverse=True)
+        for key, value in ordered:
             if value < .3:
                 continue
-            itemN = QtGui.QListWidgetItem()
+
             widget = QtGui.QWidget()
-            widgetText = QtGui.QLabel(u'{}'.format(key))
-            widgetButton = QtGui.QPushButton(u'Это я!')
-            widgetLayout = QtGui.QHBoxLayout()
-            widgetLayout.addWidget(widgetText)
-            widgetLayout.addStretch(1)
-            widgetLayout.addWidget(widgetButton)
-            widgetLayout.setSizeConstraint(QtGui.QLayout.SetMinimumSize)
-            widget.setLayout(widgetLayout)
-            itemN.setSizeHint(widget.sizeHint())
-            self.predict_list.addItem(itemN)
-            self.predict_list.setItemWidget(itemN, widget)
+            widget_text = QtGui.QLabel(u'{}'.format(key))
+            widget_button = QtGui.QPushButton(u'Это я!')
+            widget_layout = QtGui.QHBoxLayout()
+            widget_layout.addWidget(widget_text)
+            widget_layout.addStretch(1)
+            widget_layout.addWidget(widget_button)
+            widget_layout.setSizeConstraint(QtGui.QLayout.SetMinimumSize)
+            widget.setLayout(widget_layout)
+
+            item = QtGui.QListWidgetItem()
+            item.setSizeHint(widget.sizeHint())
+            self.predict_list.addItem(item)
+            self.predict_list.setItemWidget(item, widget)
+
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
