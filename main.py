@@ -19,6 +19,10 @@ class MainApp(QtGui.QWidget):
         self.timer = QtCore.QTimer()
         self.isPredict = False
 
+        self.fps_timer = QtCore.QTimer()
+        self.count_frames = 0
+        self.fps_label = QtGui.QLabel(u'Camera: 0 fps')
+
         self.init_ui()
         self.setup()
 
@@ -28,6 +32,9 @@ class MainApp(QtGui.QWidget):
         self.image.setFixedSize(self.image_size)
         self.setWindowIcon(QtGui.QIcon('logo.png'))
 
+        # fps timer settings
+        self.fps_timer.setInterval(1000)
+
         # to center on screen
         resolution = QtGui.QDesktopWidget().screenGeometry()
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
@@ -36,7 +43,7 @@ class MainApp(QtGui.QWidget):
 
         # camera layout
         camera_layout = QtGui.QVBoxLayout()
-        camera_layout.addWidget(QtGui.QLabel(u'Camera: 0 fps'))
+        camera_layout.addWidget(self.fps_label)
         camera_layout.addWidget(self.image)
 
         # list and log layout
@@ -60,8 +67,10 @@ class MainApp(QtGui.QWidget):
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.image_size.width())
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.image_size.height())
 
+        self.fps_timer.timeout.connect(self.draw_fps)
         self.timer.timeout.connect(self.stream)
         self.timer.start(30)
+        self.fps_timer.start(1000)
 
     def stream(self):
         ret, frame = self.capture.read()
@@ -80,6 +89,7 @@ class MainApp(QtGui.QWidget):
                                  frame.strides[0],
                                  QtGui.QImage.Format_RGB888)
             self.image.setPixmap(QtGui.QPixmap.fromImage(image))
+        self.count_frames += 1
 
     def update_predictlist(self, predict_dict):
         self.predict_list.clear()
@@ -103,6 +113,9 @@ class MainApp(QtGui.QWidget):
             self.predict_list.addItem(item)
             self.predict_list.setItemWidget(item, widget)
 
+    def draw_fps(self):
+        self.fps_label.setText(u'Camera: {} fps'.format(self.count_frames))
+        self.count_frames = 0
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
