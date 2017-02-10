@@ -10,7 +10,7 @@ class MainApp(QtGui.QWidget):
     def __init__(self):
         super(MainApp, self).__init__()
         self.log = QtGui.QTextEdit()
-        self.capture = cv2.VideoCapture(0)
+        self.capture = cv2.VideoCapture(1)
         self.predict_list = QtGui.QListWidget()
 
         self.image = QtGui.QLabel()

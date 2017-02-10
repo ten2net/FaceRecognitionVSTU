@@ -145,12 +145,12 @@ def predict_face(face):
         name, people_dict = predict_align_face(cv_dlib)
         return name, cv_eye_points, people_dict
     else:
-        None, None
+        return None, None, None
 
 
 def opencv_find_faces(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.6, 10)
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     person_info = []
     for face in faces:
         # get face image
@@ -159,7 +159,8 @@ def opencv_find_faces(img):
         roi96 = cv2.resize(roi, (96, 96), interpolation=cv2.INTER_CUBIC)
         # get name
         name, points, people_dict = predict_face(roi96)
-        person_info.append({'name': name, 'points': points, 'face_rect': face, 'dict': people_dict})
+        if name is not None:
+            person_info.append({'name': name, 'points': points, 'face_rect': face, 'dict': people_dict})
     return person_info
 
 
