@@ -26,6 +26,7 @@ class MainApp(QtGui.QWidget):
         # widget settings
         self.log.setEnabled(False)
         self.image.setFixedSize(self.image_size)
+        self.setWindowIcon(QtGui.QIcon('logo.png'))
 
         # to center on screen
         resolution = QtGui.QDesktopWidget().screenGeometry()
